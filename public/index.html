@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Virtual Canvas</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <h1>Dynamic Canvas</h1>
+
+      </div>
+    </header>
+
+    <section class="controls">
+      <div class="control-group upload-group">
+        <h3>📤 Upload Photo</h3>
+        <form id="uploadForm">
+          <div class="input-wrapper">
+            <label for="photoInput">Choose Image</label>
+            <div class="file-input-group">
+              <input id="photoInput" type="file" name="photo" accept="image/*">
+              <button type="button" id="cameraBtn" class="btn btn-camera">📷 Use Camera</button>
+            </div>
+            <canvas id="cameraCanvas" style="display:none;"></canvas>
+          </div>
+          
+          <div class="features-grid">
+            <div class="input-wrapper">
+              <label for="dateInput">Date</label>
+              <input id="dateInput" type="date" name="date">
+            </div>
+            
+            <div class="input-wrapper">
+              <label for="gradeInput">Grade</label>
+              <select id="gradeInput" name="grade">
+                <option value="">Select Grade</option>
+                <option value="Freshman">Freshman</option>
+                <option value="Sophomore">Sophomore</option>
+                <option value="Junior">Junior</option>
+                <option value="Senior">Senior</option>
+                <option value="Graduate">Graduate</option>
+                <option value="Alumni">Alumni</option>
+                <option value="Faculty">Faculty</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            
+            <div class="input-wrapper">
+              <label for="orderInput">Order</label>
+              <input id="orderInput" type="text" name="order" placeholder="e.g., Alpha, Beta">
+            </div>
+            
+            <div class="input-wrapper">
+              <label for="studentInput">Student</label>
+              <select id="studentInput" name="student">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">
+            <span>Upload</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="control-group filter-group">
+        <h3>🔍 Filter Photos</h3>
+        <div class="filter">
+          <div class="input-wrapper">
+            <label for="filterField">Filter By</label>
+            <select id="filterField">
+              <option value="">Select Field</option>
+              <option value="date">Date</option>
+              <option value="grade">Grade</option>
+              <option value="order">Order</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+          <div class="input-wrapper">
+            <label for="filterValue">Value</label>
+            <input id="filterValue" placeholder="Enter value">
+          </div>
+          </div>
+          <div class="button-group">
+            <button id="applyFilter" class="btn btn-secondary">Apply Filter</button>
+            <button id="clearFilter" class="btn btn-outline">Clear</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <div id="canvasContainer">
+        <div id="canvasBoard"></div>
+      </div>
+    </main>
+
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📷 Take a Photo</h3>
+          <button id="closeCameraModal" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <video id="cameraVideo" autoplay playsinline></video>
+          <canvas id="captureCanvas" style="display:none;"></canvas>
+        </div>
+        <div class="modal-footer">
+          <button id="captureBtn" class="btn btn-primary">Capture Photo</button>
+          <button id="cancelCameraBtn" class="btn btn-outline">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

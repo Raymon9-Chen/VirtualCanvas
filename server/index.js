@@ -27,34 +27,127 @@ app.use(express.json());
 app.use('/uploads', express.static(UPLOAD_DIR));
 app.use('/', express.static(path.join(__dirname, '..', 'public')));
 
-// Upload endpoint: multipart form with 'photo' file and optional 'features' JSON string
+// Upload endpoint: multipart form with 'photo' file and fixed feature fields
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'file required as `photo`' });
-  let features = {};
+  
+  // Parse fixed feature fields from request body
+  const features = {
+    date: req.body.date || null,
+    grade: req.body.grade || null,
+    order: req.body.order || null,
+    student: req.body.student === 'true' || req.body.student === true
+  };
+
   try {
-    if (req.body.features) features = JSON.parse(req.body.features);
-  } catch (e) {
-    return res.status(400).json({ error: 'features must be JSON' });
+    // Use SQL INSERT with fixed columns
+    const photo = db.insertPhoto(req.file.filename, features);
+    console.log(`[SQL INSERT] Photo uploaded: ID=${photo.id}, Grade=${photo.grade}, Student=${photo.student}`);
+    res.json(photo);
+  } catch (err) {
+    console.error('[SQL ERROR]', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
   }
-
-  const photo = db.insertPhoto(req.file.filename, features);
-  res.json(photo);
 });
 
-// List photos with optional filter query parameters: featureKey, featureValue
+// List photos with optional filter query parameters: field, value
 app.get('/api/photos', (req, res) => {
-  const photos = db.getAllPhotos();
-
-  const { featureKey, featureValue } = req.query;
-  let filtered = photos;
-  if (featureKey) {
-    filtered = filtered.filter(p => Object.prototype.hasOwnProperty.call(p.features, featureKey));
-    if (featureValue !== undefined) {
-      filtered = filtered.filter(p => String(p.features[featureKey]) === featureValue);
+  try {
+    const { field, value } = req.query;
+    
+    let photos;
+    if (field && value !== undefined) {
+      // Use SQL query with WHERE clause filtering
+      photos = db.queryPhotosByField(field, value);
+      console.log(`[SQL QUERY] Filter by ${field}=${value}, found ${photos.length} photos`);
+    } else {
+      // Use SQL SELECT to get all photos
+      photos = db.getAllPhotos();
+      console.log(`[SQL QUERY] Retrieved all photos: ${photos.length} total`);
     }
-  }
 
-  res.json(filtered);
+    res.json(photos);
+  } catch (err) {
+    console.error('[SQL ERROR]', err);
+    res.status(500).json({ error: 'Database query error: ' + err.message });
+  }
 });
 
-app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
+// Get single photo by ID
+app.get('/api/photos/:id', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const photo = db.getPhotoById(id);
+    
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+    
+    console.log(`[SQL QUERY] Retrieved photo ID=${id}`);
+    res.json(photo);
+  } catch (err) {
+    console.error('[SQL ERROR]', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// Delete photo endpoint
+app.delete('/api/photos/:id', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const photo = db.getPhotoById(id);
+    
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+    
+    // Delete from database using SQL DELETE
+    const deleted = db.deletePhoto(id);
+    
+    if (deleted) {
+      // Also delete the file from disk
+      const filePath = path.join(UPLOAD_DIR, photo.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      console.log(`[SQL DELETE] Deleted photo ID=${id}, filename=${photo.filename}`);
+      res.json({ success: true, message: 'Photo deleted' });
+    } else {
+      res.status(500).json({ error: 'Failed to delete photo' });
+    }
+  } catch (err) {
+    console.error('[SQL ERROR]', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// Database stats endpoint
+app.get('/api/stats', (req, res) => {
+  try {
+    const stats = db.getStats();
+    console.log(`[SQL QUERY] Database stats retrieved`);
+    res.json(stats);
+  } catch (err) {
+    console.error('[SQL ERROR]', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// Initialize database and start server
+async function startServer() {
+  try {
+    console.log('[Server] Initializing database...');
+    await db.initDatabase();
+    console.log('[Server] Database ready!');
+    
+    app.listen(PORT, () => {
+      console.log(`[Server] Listening on http://localhost:${PORT}`);
+      console.log('[Server] Ready to accept requests');
+    });
+  } catch (err) {
+    console.error('[Server] Failed to start:', err);
+    process.exit(1);
+  }
+}
+
+startServer();
