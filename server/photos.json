@@ -1,0 +1,25 @@
+{
+  "lastId": 3,
+  "photos": [
+    {
+      "id": 1,
+      "filename": "1763426931863-fruits.jpg",
+      "features": {
+        "tag": "vacation"
+      },
+      "created_at": "2025-11-18T00:48:51.875Z"
+    },
+    {
+      "id": 2,
+      "filename": "1763427170082-camera-1763427164804.jpg",
+      "features": {},
+      "created_at": "2025-11-18T00:52:50.094Z"
+    },
+    {
+      "id": 3,
+      "filename": "1763427370283-camera-1763427364384.jpg",
+      "features": {},
+      "created_at": "2025-11-18T00:56:10.287Z"
+    }
+  ]
+}
