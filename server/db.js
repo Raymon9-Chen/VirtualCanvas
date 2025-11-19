@@ -243,5 +243,3 @@ module.exports = {
   queryPhotosByField,
   getStats
 };
-
-
