@@ -27,7 +27,7 @@ app.use(express.json());
 app.use('/uploads', express.static(UPLOAD_DIR));
 app.use('/', express.static(path.join(__dirname, '..', 'public')));
 
-// Upload endpoint: multipart form with 'photo' file and fixed feature fields
+// Upload endpoint
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'file required as `photo`' });
   

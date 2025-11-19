@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const initSqlJs = require('sql.js');
 
-// Initialize SQL.js (pure JavaScript SQLite - no native compilation needed!)
+// Initialize SQL.js 
 let db = null;
 const DB_PATH = path.join(__dirname, 'photos.db');
 
@@ -19,7 +19,7 @@ async function initDatabase() {
     console.log('[SQL] Created new database');
   }
   
-  // Create photos table with fixed feature columns
+  // Create photos table with the feature columns
   db.run(`
     CREATE TABLE IF NOT EXISTS photos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,12 +42,8 @@ function saveDatabase() {
   fs.writeFileSync(DB_PATH, buffer);
 }
 
-/**
- * Insert a new photo into the database
- * @param {string} filename - The photo filename
- * @param {object} features - Features object with date, grade, order, student
- * @returns {object} The inserted photo with id and created_at
- */
+// Insert a new photo into the database
+
 function insertPhoto(filename, features) {
   if (!db) throw new Error('Database not initialized');
   
@@ -55,7 +51,7 @@ function insertPhoto(filename, features) {
   const date = features.date || null;
   const grade = features.grade || null;
   const order = features.order || null;
-  const isStudent = features.student ? 1 : 0; // Convert boolean to integer
+  const isStudent = features.student ? 1 : 0; 
   
   db.run(
     'INSERT INTO photos (filename, date, grade, order_name, is_student, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -79,10 +75,7 @@ function insertPhoto(filename, features) {
   };
 }
 
-/**
- * Get all photos from the database
- * @returns {Array} Array of photo objects with fixed features
- */
+// Get all photos from the database
 function getAllPhotos() {
   if (!db) throw new Error('Database not initialized');
   
@@ -107,11 +100,6 @@ function getAllPhotos() {
   }));
 }
 
-/**
- * Get a single photo by ID
- * @param {number} id - Photo ID
- * @returns {object|null} Photo object or null if not found
- */
 function getPhotoById(id) {
   if (!db) throw new Error('Database not initialized');
   
@@ -135,11 +123,8 @@ function getPhotoById(id) {
   };
 }
 
-/**
- * Delete a photo by ID
- * @param {number} id - Photo ID
- * @returns {boolean} True if deleted, false if not found
- */
+
+//Delete a photo by ID
 function deletePhoto(id) {
   if (!db) throw new Error('Database not initialized');
   
@@ -149,16 +134,13 @@ function deletePhoto(id) {
   return true; // sql.js doesn't provide affected rows count easily
 }
 
-/**
- * Query photos by specific field and value using SQL WHERE clause
- * @param {string} field - The field to filter by (date, grade, order, student)
- * @param {string|boolean} value - Value to match
- * @returns {Array} Filtered photos
- */
+
+ //Query photos by specific field and value using SQL WHERE clause
+ photos
+
 function queryPhotosByField(field, value) {
   if (!db) throw new Error('Database not initialized');
   
-  // Map frontend field names to database column names
   const fieldMap = {
     'date': 'date',
     'grade': 'grade',
@@ -200,10 +182,6 @@ function queryPhotosByField(field, value) {
   }));
 }
 
-/**
- * Get database statistics
- * @returns {object} Stats about the database
- */
 function getStats() {
   if (!db) throw new Error('Database not initialized');
   
@@ -217,7 +195,7 @@ function getStats() {
   };
 }
 
-// Graceful shutdown - save database before exit
+// Save database before exit
 process.on('exit', () => {
   console.log('[SQL] Saving database on exit...');
   saveDatabase();
