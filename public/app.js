@@ -117,8 +117,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (ev) => {
   
   const res = await api.upload(fd);
   if (res.error) return alert('Upload failed: ' + res.error);
-  // add to board at random position
-  addPhotoToBoard(res, Math.random() * 300, Math.random() * 300);
+  // refresh the list so state and filter options update
+  await loadPhotos();
   form.reset();
 });
 
@@ -199,16 +199,126 @@ async function loadPhotos(filter = {}) {
   });
 }
 
+// Elements
+const filterFieldEl = document.getElementById('filterField');
+const filterValueContainer = document.getElementById('filterValueContainer');
+
+// Map frontend field names to photo object properties
+const fieldPropMap = { date: 'date', grade: 'grade', order: 'order', student: 'student' };
+
+// Get distinct values for a given field from cached photosState (or query all if empty)
+async function getDistinctValues(field) {
+  if (!field) return [];
+
+  if (!photosState || photosState.length === 0) {
+    // ensure we have all photos to derive possible values
+    photosState = await api.list();
+  }
+
+  const prop = fieldPropMap[field];
+  const set = new Set();
+  photosState.forEach(p => {
+    let val = p[prop];
+    if (val === null || val === undefined || val === '') return;
+    if (field === 'student') val = String(Boolean(val));
+    set.add(val);
+  });
+
+  const arr = Array.from(set);
+  if (field === 'student') {
+    // sort true before false
+    arr.sort((a, b) => (a === b ? 0 : (a === 'true' ? -1 : 1)));
+  } else {
+    arr.sort();
+  }
+  return arr;
+}
+
+// When the selected filter field changes, populate the value select with discrete options
+filterFieldEl.addEventListener('change', async () => {
+  const field = filterFieldEl.value;
+  // reset container
+  filterValueContainer.innerHTML = '';
+
+  // helper to create disabled Any select
+  const makeDefaultSelect = () => {
+    const sel = document.createElement('select');
+    sel.id = 'filterValue';
+    sel.disabled = true;
+    const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'Any'; sel.appendChild(opt);
+    return sel;
+  };
+
+  if (!field) {
+    filterValueContainer.appendChild(makeDefaultSelect());
+    return;
+  }
+
+  // Date -> show date picker
+  if (field === 'date') {
+    const inp = document.createElement('input');
+    inp.type = 'date';
+    inp.id = 'filterValue';
+    inp.name = 'filterValue';
+    inp.value = '';
+    filterValueContainer.appendChild(inp);
+    return;
+  }
+
+  // Grade -> show full grade options (not data-derived)
+  if (field === 'grade') {
+    const grades = ['Freshman','Sophomore','Junior','Senior','Graduate','Alumni','Faculty','Other'];
+    const sel = document.createElement('select'); sel.id = 'filterValue';
+    const defaultOpt = document.createElement('option'); defaultOpt.value = ''; defaultOpt.textContent = 'Any'; sel.appendChild(defaultOpt);
+    grades.forEach(g => {
+      const o = document.createElement('option'); o.value = g; o.textContent = g; sel.appendChild(o);
+    });
+    filterValueContainer.appendChild(sel);
+    return;
+  }
+
+  // Student -> show Yes/No
+  if (field === 'student') {
+    const sel = document.createElement('select'); sel.id = 'filterValue';
+    const defaultOpt = document.createElement('option'); defaultOpt.value = ''; defaultOpt.textContent = 'Any'; sel.appendChild(defaultOpt);
+    const yes = document.createElement('option'); yes.value = 'true'; yes.textContent = 'Yes'; sel.appendChild(yes);
+    const no = document.createElement('option'); no.value = 'false'; no.textContent = 'No'; sel.appendChild(no);
+    filterValueContainer.appendChild(sel);
+    return;
+  }
+
+  // Default: for 'order' and others, populate from data
+  const sel = document.createElement('select'); sel.id = 'filterValue';
+  const defaultOpt = document.createElement('option'); defaultOpt.value = ''; defaultOpt.textContent = 'Any'; sel.appendChild(defaultOpt);
+  filterValueContainer.appendChild(sel);
+
+  const values = await getDistinctValues(field);
+  if (!values.length) return; // leave just 'Any'
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  });
+});
+
+// Apply filter using selected option
 document.getElementById('applyFilter').addEventListener('click', () => {
-  const field = document.getElementById('filterField').value;
-  const value = document.getElementById('filterValue').value.trim();
-  if (!field || !value) return loadPhotos();
+  const field = filterFieldEl.value;
+  const valEl = document.getElementById('filterValue');
+  const value = valEl ? valEl.value : '';
+  if (!field || value === '') return loadPhotos();
   loadPhotos({ field, value });
 });
 
+// Clear filter
 document.getElementById('clearFilter').addEventListener('click', () => { 
-  document.getElementById('filterField').value = ''; 
-  document.getElementById('filterValue').value = ''; 
+  filterFieldEl.value = ''; 
+  // reset container to disabled Any select
+  filterValueContainer.innerHTML = '';
+  const sel = document.createElement('select'); sel.id = 'filterValue'; sel.disabled = true;
+  const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'Any'; sel.appendChild(opt);
+  filterValueContainer.appendChild(sel);
   loadPhotos(); 
 });
 
